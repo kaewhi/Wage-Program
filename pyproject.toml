@@ -1,0 +1,10 @@
+[project]
+name = "wage-program"
+version = "0.1.0"
+description = "Employee wage tracking system (SQLite-backed)."
+readme = "README.md"
+requires-python = ">=3.10"
+
+[project.scripts]
+wage-program = "wage_program.cli:main"
+
