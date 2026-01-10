@@ -1,0 +1,1212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Employee Wage Tracking (Local)</title>
+
+  <!-- Helps prevent “stale” refreshes while developing locally -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
+  <style>
+    :root{
+      --bg:#0b1020; --card:#121a33; --muted:#9fb0ff; --text:#e8ecff;
+      --line:#243057; --accent:#6ea8fe; --good:#34d399; --bad:#fb7185;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{margin:0; font-family:var(--sans); background: radial-gradient(1200px 800px at 20% 10%, #1a2552, var(--bg)); color:var(--text)}
+    header{padding:18px 18px 10px; max-width:1200px; margin:0 auto}
+    h1{margin:0 0 6px; font-size:18px; font-weight:700}
+    .sub{color:var(--muted); font-size:13px}
+    .wrap{max-width:1200px; margin:0 auto; padding:12px 18px 26px}
+    .tabs{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 14px}
+    .tab{border:1px solid var(--line); background:rgba(18,26,51,.75); color:var(--text); padding:8px 10px; border-radius:10px; cursor:pointer}
+    .tab[aria-selected="true"]{border-color:rgba(110,168,254,.8); box-shadow:0 0 0 3px rgba(110,168,254,.14)}
+    .grid{display:grid; grid-template-columns: 1fr 1fr; gap:14px}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
+    .card{background:rgba(18,26,51,.78); border:1px solid rgba(36,48,87,.9); border-radius:14px; padding:14px; box-shadow:var(--shadow)}
+    .card h2{margin:0 0 10px; font-size:14px}
+    .row{display:grid; grid-template-columns: 1fr 1fr; gap:10px}
+    @media (max-width: 700px){ .row{grid-template-columns:1fr} }
+    label{display:block; font-size:12px; color:var(--muted); margin:0 0 6px}
+    input, select, textarea, button{
+      font-family:var(--sans);
+      border-radius:10px; border:1px solid rgba(36,48,87,.9);
+      background:#0f1731; color:var(--text);
+      padding:9px 10px; width:100%;
+    }
+    textarea{min-height:74px; resize:vertical}
+    button{cursor:pointer; background:linear-gradient(180deg, rgba(110,168,254,.22), rgba(110,168,254,.08)); border-color:rgba(110,168,254,.45)}
+    button.secondary{background:transparent; border-color:rgba(36,48,87,.9)}
+    button.danger{background:linear-gradient(180deg, rgba(251,113,133,.2), rgba(251,113,133,.08)); border-color:rgba(251,113,133,.55)}
+    .btns{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .btns > *{flex:0 0 auto}
+    .btns .grow{flex:1 1 auto}
+    .muted{color:var(--muted)}
+    .pill{display:inline-block; font-size:12px; padding:4px 8px; border-radius:999px; border:1px solid rgba(36,48,87,.9); background:rgba(15,23,49,.7)}
+    .ok{color:var(--good)}
+    .err{color:var(--bad)}
+    table{width:100%; border-collapse:collapse; overflow:hidden; border-radius:12px; border:1px solid rgba(36,48,87,.9)}
+    th, td{padding:10px; border-bottom:1px solid rgba(36,48,87,.75); font-size:13px; text-align:left; vertical-align:top}
+    th{background:rgba(15,23,49,.75); color:var(--muted); font-weight:600}
+    tr:last-child td{border-bottom:none}
+    .small{font-size:12px}
+    .mono{font-family:var(--mono)}
+    .kpi{display:flex; gap:10px; flex-wrap:wrap}
+    .kpi .cardlike{border:1px solid rgba(36,48,87,.9); border-radius:12px; padding:10px; background:rgba(15,23,49,.55)}
+    .cardlike b{display:block; font-size:12px; color:var(--muted); font-weight:600}
+    .cardlike span{font-size:16px; font-weight:800}
+    .hidden{display:none !important}
+    .footnote{font-size:12px; color:var(--muted); margin-top:10px}
+    .hr{height:1px; background:rgba(36,48,87,.9); margin:12px 0}
+    .right{display:flex; justify-content:flex-end}
+    .notice{border:1px solid rgba(110,168,254,.35); background:rgba(110,168,254,.08); padding:10px; border-radius:12px; color:var(--text)}
+    .notice .muted{color:#c8d3ff}
+  </style>
+</head>
+
+<body>
+<header>
+  <h1>Employee Wage Tracking (Local HTML)</h1>
+  <div class="sub">
+    Stores/Departments • Employees • Wage increases (effective date) • Hours + extra earnings • Reports
+    <span class="pill mono" id="storagePill">localStorage</span>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="tabs" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" data-tab="setup" aria-selected="true">Setup</button>
+    <button class="tab" role="tab" data-tab="employees" aria-selected="false">Employees & Wages</button>
+    <button class="tab" role="tab" data-tab="entries" aria-selected="false">Hours & Earnings</button>
+    <button class="tab" role="tab" data-tab="reports" aria-selected="false">Reports</button>
+    <button class="tab" role="tab" data-tab="backup" aria-selected="false">Backup</button>
+  </div>
+
+  <div id="msg" class="notice hidden"></div>
+
+  <!-- SETUP -->
+  <section class="panel" id="tab-setup">
+    <div class="grid">
+      <div class="card">
+        <h2>Add Store</h2>
+        <div class="row">
+          <div>
+            <label>Store name</label>
+            <input id="storeName" placeholder='e.g., "Store 1"' />
+          </div>
+        </div>
+        <div class="btns" style="margin-top:10px">
+          <button id="addStoreBtn">Add store</button>
+          <button class="secondary" id="clearAllBtn" title="Deletes ALL data">Clear all data</button>
+        </div>
+        <div class="footnote">Tip: This app runs entirely on your computer and saves to your browser.</div>
+      </div>
+
+      <div class="card">
+        <h2>Add Department</h2>
+        <div class="row">
+          <div>
+            <label>Store</label>
+            <select id="deptStore"></select>
+          </div>
+          <div>
+            <label>Department name</label>
+            <input id="deptName" placeholder='e.g., "Bakery"' />
+          </div>
+        </div>
+        <div class="btns" style="margin-top:10px">
+          <button id="addDeptBtn">Add department</button>
+        </div>
+      </div>
+
+      <div class="card" style="grid-column:1/-1">
+        <h2>Stores & Departments</h2>
+        <div id="storesList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EMPLOYEES -->
+  <section class="panel hidden" id="tab-employees">
+    <div class="grid">
+      <div class="card">
+        <h2>Add Employee (with initial wage)</h2>
+        <div class="row">
+          <div>
+            <label>First name</label>
+            <input id="empFirst" placeholder="First" />
+          </div>
+          <div>
+            <label>Last name</label>
+            <input id="empLast" placeholder="Last" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>Store</label>
+            <select id="empStore"></select>
+          </div>
+          <div>
+            <label>Department</label>
+            <select id="empDept"></select>
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>Hire date (optional)</label>
+            <input id="empHireDate" type="date" />
+          </div>
+          <div>
+            <label>Initial hourly wage</label>
+            <input id="empWage" type="number" step="0.01" min="0" placeholder="e.g., 22.50" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>Wage effective date</label>
+            <input id="empWageDate" type="date" />
+          </div>
+          <div class="muted small" style="align-self:end">
+            Wage history is stored by effective date. Later you can add increases.
+          </div>
+        </div>
+        <div class="btns" style="margin-top:10px">
+          <button id="addEmpBtn">Add employee</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Wage Increase / Set Wage (effective date)</h2>
+        <div class="row">
+          <div>
+            <label>Employee</label>
+            <select id="wageEmp"></select>
+          </div>
+          <div>
+            <label>Effective date</label>
+            <input id="wageDate" type="date" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>Increase amount (adds to wage)</label>
+            <input id="wageIncrease" type="number" step="0.01" min="0" placeholder="e.g., 1.00" />
+          </div>
+          <div>
+            <label>OR Set exact hourly wage</label>
+            <input id="wageSet" type="number" step="0.01" min="0" placeholder="e.g., 25.50" />
+          </div>
+        </div>
+        <div class="btns" style="margin-top:10px">
+          <button id="applyWageBtn">Apply wage change</button>
+          <span class="muted small">If both are filled, “Set exact wage” wins.</span>
+        </div>
+        <div class="hr"></div>
+        <div class="muted small">Wage history (selected employee):</div>
+        <div id="wageHistory"></div>
+      </div>
+
+      <div class="card" style="grid-column:1/-1">
+        <h2>Employees</h2>
+        <div class="row">
+          <div>
+            <label>Filter by Store</label>
+            <select id="empFilterStore"></select>
+          </div>
+          <div>
+            <label>Filter by Department</label>
+            <select id="empFilterDept"></select>
+          </div>
+        </div>
+        <div style="margin-top:10px" id="employeesTable"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ENTRIES -->
+  <section class="panel hidden" id="tab-entries">
+    <div class="grid">
+      <div class="card">
+        <h2>Log Regular Hours (auto-calculates pay)</h2>
+        <div class="row">
+          <div>
+            <label>Employee</label>
+            <select id="hoursEmp"></select>
+          </div>
+          <div>
+            <label>Date</label>
+            <input id="hoursDate" type="date" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>Hours</label>
+            <input id="hoursValue" type="number" step="0.01" min="0" placeholder="e.g., 8" />
+          </div>
+          <div>
+            <label>Note (optional)</label>
+            <input id="hoursNote" placeholder="optional" />
+          </div>
+        </div>
+        <div class="btns" style="margin-top:10px">
+          <button id="addHoursBtn">Add regular hours</button>
+          <span class="muted small" id="hoursPreview"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Log Additional Earnings (bonus, car, insurance, RRSP, etc.)</h2>
+        <div class="row">
+          <div>
+            <label>Employee</label>
+            <select id="earnEmp"></select>
+          </div>
+          <div>
+            <label>Earning type</label>
+            <select id="earnType"></select>
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>Date</label>
+            <input id="earnDate" type="date" />
+          </div>
+          <div>
+            <label>Hours (optional)</label>
+            <input id="earnHours" type="number" step="0.01" min="0" placeholder="0" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>Yearly amount</label>
+            <input id="earnAmount" type="number" step="0.01" min="0" placeholder="e.g., 50000.00" />
+          </div>
+          <div>
+            <label>Note (optional)</label>
+            <input id="earnNote" placeholder="optional" />
+          </div>
+        </div>
+        <div class="btns" style="margin-top:10px">
+          <button id="addEarnBtn">Add earning entry</button>
+        </div>
+
+        <div class="hr"></div>
+        <div class="row">
+          <div>
+            <label>Add custom earning type</label>
+            <input id="newTypeName" placeholder='e.g., "Overtime Premium"' />
+          </div>
+          <div style="align-self:end">
+            <button id="addTypeBtn">Add earning type</button>
+          </div>
+        </div>
+        <div class="footnote">Default types included: Regular, Bonus, Car, Health and Wellness, Insurance, RRSP.</div>
+      </div>
+
+      <div class="card" style="grid-column:1/-1">
+        <h2>Recent Entries</h2>
+        <div class="row">
+          <div>
+            <label>From</label>
+            <input id="entriesFrom" type="date" />
+          </div>
+          <div>
+            <label>To</label>
+            <input id="entriesTo" type="date" />
+          </div>
+        </div>
+        <div class="btns" style="margin-top:10px">
+          <button id="refreshEntriesBtn" class="secondary">Refresh</button>
+          <span class="muted small">You can delete entries from the table.</span>
+        </div>
+        <div style="margin-top:10px" id="entriesTable"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REPORTS -->
+  <section class="panel hidden" id="tab-reports">
+    <div class="grid">
+      <div class="card" style="grid-column:1/-1">
+        <h2>Report by Department (Totals + Average Wage)</h2>
+        <div class="row">
+          <div>
+            <label>Store</label>
+            <select id="rptStore"></select>
+          </div>
+          <div class="muted small" style="align-self:end">
+            Average wage = total earnings / total hours (within date range).
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div>
+            <label>From (optional)</label>
+            <input id="rptFrom" type="date" />
+          </div>
+          <div>
+            <label>To (optional)</label>
+            <input id="rptTo" type="date" />
+          </div>
+        </div>
+        <div class="btns" style="margin-top:10px">
+          <button id="runReportBtn">Run report</button>
+        </div>
+        <div class="hr"></div>
+        <div class="kpi" id="rptKpis"></div>
+        <div style="margin-top:10px" id="rptTable"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BACKUP -->
+  <section class="panel hidden" id="tab-backup">
+    <div class="grid">
+      <div class="card">
+        <h2>Export</h2>
+        <p class="muted small">Download a JSON backup of everything.</p>
+        <div class="btns">
+          <button id="exportBtn">Download backup (.json)</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Import</h2>
+        <p class="muted small">Import a JSON backup (replaces current data).</p>
+        <input id="importFile" type="file" accept="application/json" />
+        <div class="btns" style="margin-top:10px">
+          <button id="importBtn" class="danger">Import backup</button>
+        </div>
+      </div>
+
+      <div class="card" style="grid-column:1/-1">
+        <h2>Data location</h2>
+        <div class="notice">
+          <div><b>Stored locally:</b> <span class="mono" id="storageKey"></span></div>
+          <div class="muted small" style="margin-top:6px">
+            If you clear your browser storage, data will be removed. Use Backup to keep a copy.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const STORAGE_KEY = "wageProgramData_v1";
+
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+  const fmtMoney = (n) => (Number.isFinite(n) ? n.toFixed(2) : "");
+  const fmtNum = (n) => (Number.isFinite(n) ? String(n) : "");
+  const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+
+  function isoToday() {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  function isIsoDate(s) {
+    return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
+  }
+  function ensureDateOrNull(s) {
+    if (!s) return null;
+    if (!isIsoDate(s)) throw new Error("Invalid date. Use YYYY-MM-DD.");
+    return s;
+  }
+  function uid() {
+    if (crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "id_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
+  }
+
+  function defaultData() {
+    return {
+      version: 1,
+      stores: [],
+      departments: [],
+      employees: [],
+      wages: [], // {id, employeeId, effectiveDate, hourlyRate}
+      earningTypes: [
+        { id: uid(), name: "Regular" },
+        { id: uid(), name: "Bonus" },
+        { id: uid(), name: "Car" },
+        { id: uid(), name: "Health and Wellness" },
+        { id: uid(), name: "Insurance" },
+        { id: uid(), name: "RRSP" }
+      ],
+      entries: [], // {id, employeeId, typeId, date, hours, amount, note}
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+  }
+
+  function load() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultData();
+    try {
+      const d = JSON.parse(raw);
+      if (!d || typeof d !== "object") return defaultData();
+      if (!Array.isArray(d.earningTypes) || !Array.isArray(d.entries)) return defaultData();
+      return d;
+    } catch {
+      return defaultData();
+    }
+  }
+
+  function save() {
+    data.updatedAt = new Date().toISOString();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function setMsg(text, kind="ok") {
+    const el = $("#msg");
+    el.classList.remove("hidden");
+    el.innerHTML = `<div><b class="${kind === "ok" ? "ok" : "err"}">${kind === "ok" ? "OK" : "Error"}:</b> ${escapeHtml(text)}</div>`;
+    window.clearTimeout(setMsg._t);
+    setMsg._t = window.setTimeout(() => el.classList.add("hidden"), 4500);
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[c]));
+  }
+
+  function requireNonEmpty(s, label) {
+    if (!s || !String(s).trim()) throw new Error(`${label} is required.`);
+    return String(s).trim();
+  }
+
+  function findStore(storeId) { return data.stores.find(s => s.id === storeId) || null; }
+  function findDept(deptId) { return data.departments.find(d => d.id === deptId) || null; }
+  function findEmployee(empId) { return data.employees.find(e => e.id === empId) || null; }
+  function findType(typeId) { return data.earningTypes.find(t => t.id === typeId) || null; }
+
+  function storeName(id) { const s = findStore(id); return s ? s.name : "(unknown)"; }
+  function deptName(id) { const d = findDept(id); return d ? d.name : "(unknown)"; }
+  function empLabel(e) { return `${e.lastName}, ${e.firstName} (#${e.shortId})`; }
+  function typeName(id) { const t = findType(id); return t ? t.name : "(unknown)"; }
+
+  function sortByName(a, b) { return String(a.name).localeCompare(String(b.name)); }
+
+  function getCurrentWage(empId) {
+    const rows = data.wages
+      .filter(w => w.employeeId === empId)
+      .slice()
+      .sort((a,b) => String(b.effectiveDate).localeCompare(String(a.effectiveDate)));
+    return rows.length ? Number(rows[0].hourlyRate) : null;
+  }
+
+  function getWageAt(empId, dateIso) {
+    const rows = data.wages
+      .filter(w => w.employeeId === empId && w.effectiveDate <= dateIso)
+      .slice()
+      .sort((a,b) => String(b.effectiveDate).localeCompare(String(a.effectiveDate)));
+    return rows.length ? Number(rows[0].hourlyRate) : null;
+  }
+
+  function upsertWage(empId, effectiveDate, hourlyRate) {
+    const existing = data.wages.find(w => w.employeeId === empId && w.effectiveDate === effectiveDate);
+    if (existing) { existing.hourlyRate = hourlyRate; return; }
+    data.wages.push({ id: uid(), employeeId: empId, effectiveDate, hourlyRate });
+  }
+
+  function ensureSelectOptions(sel, options, value, placeholder="(select)") {
+    sel.innerHTML = "";
+    const ph = document.createElement("option");
+    ph.value = "";
+    ph.textContent = placeholder;
+    sel.appendChild(ph);
+
+    for (const opt of options) {
+      const o = document.createElement("option");
+      o.value = opt.value;
+      o.textContent = opt.label;
+      sel.appendChild(o);
+    }
+    sel.value = value || "";
+  }
+
+  function refreshAll() {
+    refreshSetup();
+    refreshEmployees();
+    refreshEntries();
+    refreshReportsBasics();
+    $("#storageKey").textContent = STORAGE_KEY;
+  }
+
+  function refreshSetup() {
+    const stores = data.stores.slice().sort(sortByName);
+    ensureSelectOptions($("#deptStore"), stores.map(s => ({ value: s.id, label: s.name })), $("#deptStore").value);
+    renderStoresList();
+  }
+
+  function renderStoresList() {
+    const container = $("#storesList");
+    const stores = data.stores.slice().sort(sortByName);
+    if (!stores.length) {
+      container.innerHTML = `<div class="muted">No stores yet. Add one above.</div>`;
+      return;
+    }
+
+    container.innerHTML = stores.map(s => {
+      const depts = data.departments.filter(d => d.storeId === s.id).slice().sort(sortByName);
+
+      const deptHtml = depts.length
+        ? `<table>
+             <thead><tr><th>Department</th><th class="right">Actions</th></tr></thead>
+             <tbody>
+               ${depts.map(d => `
+                 <tr>
+                   <td>${escapeHtml(d.name)}</td>
+                   <td class="right">
+                     <button class="danger small" data-action="delDept" data-id="${d.id}">Delete</button>
+                   </td>
+                 </tr>
+               `).join("")}
+             </tbody>
+           </table>`
+        : `<div class="muted small">No departments in this store yet.</div>`;
+
+      return `
+        <div class="cardlike" style="margin-bottom:10px">
+          <div class="btns">
+            <div class="grow">
+              <b>Store</b>
+              <div style="font-size:16px;font-weight:800">${escapeHtml(s.name)}</div>
+              <div class="muted small mono">ID: ${escapeHtml(s.id)}</div>
+            </div>
+            <button class="danger" data-action="delStore" data-id="${s.id}">Delete store</button>
+          </div>
+          <div style="margin-top:10px">${deptHtml}</div>
+        </div>
+      `;
+    }).join("");
+
+    container.querySelectorAll("button[data-action]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const action = btn.getAttribute("data-action");
+        const id = btn.getAttribute("data-id");
+        if (action === "delStore") deleteStore(id);
+        if (action === "delDept") deleteDepartment(id);
+      });
+    });
+  }
+
+  function refreshEmployees() {
+    const stores = data.stores.slice().sort(sortByName);
+
+    ensureSelectOptions($("#empStore"), stores.map(s => ({ value: s.id, label: s.name })), $("#empStore").value);
+    refreshEmpDeptDropdown();
+
+    const emps = data.employees.slice().sort((a,b) => (a.lastName+a.firstName).localeCompare(b.lastName+b.firstName));
+    ensureSelectOptions($("#wageEmp"), emps.map(e => ({ value: e.id, label: empLabel(e) })), $("#wageEmp").value, "(select employee)");
+
+    ensureSelectOptions($("#empFilterStore"),
+      [{ value: "__all__", label: "(All stores)" }].concat(stores.map(s => ({ value: s.id, label: s.name }))),
+      $("#empFilterStore").value || "__all__",
+      "(All stores)"
+    );
+    refreshEmpFilterDept();
+
+    renderEmployeesTable();
+    renderWageHistory();
+  }
+
+  function refreshEmpDeptDropdown() {
+    const storeId = $("#empStore").value;
+    const depts = data.departments.filter(d => !storeId || d.storeId === storeId).slice().sort(sortByName);
+    ensureSelectOptions($("#empDept"), depts.map(d => ({ value: d.id, label: d.name })), $("#empDept").value);
+  }
+
+  function refreshEmpFilterDept() {
+    const storeId = $("#empFilterStore").value;
+    const depts = data.departments
+      .filter(d => storeId === "__all__" ? true : d.storeId === storeId)
+      .slice()
+      .sort(sortByName);
+
+    ensureSelectOptions($("#empFilterDept"),
+      [{ value: "__all__", label: "(All departments)" }].concat(depts.map(d => ({ value: d.id, label: d.name }))),
+      $("#empFilterDept").value || "__all__",
+      "(All departments)"
+    );
+  }
+
+  function renderEmployeesTable() {
+    const storeFilter = $("#empFilterStore").value || "__all__";
+    const deptFilter = $("#empFilterDept").value || "__all__";
+
+    let emps = data.employees.slice();
+    if (storeFilter !== "__all__") emps = emps.filter(e => e.storeId === storeFilter);
+    if (deptFilter !== "__all__") emps = emps.filter(e => e.deptId === deptFilter);
+
+    emps.sort((a,b) => (a.lastName+a.firstName).localeCompare(b.lastName+b.firstName));
+
+    const container = $("#employeesTable");
+    if (!emps.length) {
+      container.innerHTML = `<div class="muted">No employees match your filter.</div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Employee</th><th>Store</th><th>Department</th><th>Hire Date</th><th>Current Wage</th><th class="right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${emps.map(e => {
+            const currentWage = getCurrentWage(e.id);
+            return `
+              <tr>
+                <td>${escapeHtml(e.firstName)} ${escapeHtml(e.lastName)}<div class="muted small mono">#${escapeHtml(e.shortId)}</div></td>
+                <td>${escapeHtml(storeName(e.storeId))}</td>
+                <td>${escapeHtml(deptName(e.deptId))}</td>
+                <td class="mono">${e.hireDate ? escapeHtml(e.hireDate) : ""}</td>
+                <td class="mono">${currentWage == null ? "" : fmtMoney(currentWage)}</td>
+                <td class="right">
+                  <button class="danger small" data-action="delEmp" data-id="${e.id}">Delete</button>
+                </td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
+      <div class="footnote">Deleting an employee also deletes their wage history and entries.</div>
+    `;
+
+    container.querySelectorAll("button[data-action='delEmp']").forEach(btn => {
+      btn.addEventListener("click", () => deleteEmployee(btn.getAttribute("data-id")));
+    });
+  }
+
+  function renderWageHistory() {
+    const empId = $("#wageEmp").value;
+    const container = $("#wageHistory");
+    if (!empId) {
+      container.innerHTML = `<div class="muted">(select an employee)</div>`;
+      return;
+    }
+    const rows = data.wages
+      .filter(w => w.employeeId === empId)
+      .slice()
+      .sort((a,b) => String(b.effectiveDate).localeCompare(String(a.effectiveDate)));
+
+    if (!rows.length) {
+      container.innerHTML = `<div class="muted">No wage history yet.</div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <table>
+        <thead><tr><th>Effective date</th><th>Hourly wage</th><th class="right">Actions</th></tr></thead>
+        <tbody>
+          ${rows.map(w => `
+            <tr>
+              <td class="mono">${escapeHtml(w.effectiveDate)}</td>
+              <td class="mono">${fmtMoney(Number(w.hourlyRate))}</td>
+              <td class="right"><button class="danger small" data-action="delWage" data-id="${w.id}">Delete</button></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+    container.querySelectorAll("button[data-action='delWage']").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-id");
+        data.wages = data.wages.filter(w => w.id !== id);
+        save();
+        renderWageHistory();
+        renderEmployeesTable();
+        refreshEntries();
+        setMsg("Deleted wage record.");
+      });
+    });
+  }
+
+  function refreshEntries() {
+    const emps = data.employees.slice().sort((a,b)=> (a.lastName+a.firstName).localeCompare(b.lastName+b.firstName));
+    const types = data.earningTypes.slice().sort((a,b)=> a.name.localeCompare(b.name));
+
+    ensureSelectOptions($("#hoursEmp"), emps.map(e => ({ value: e.id, label: empLabel(e) })), $("#hoursEmp").value, "(select employee)");
+    ensureSelectOptions($("#earnEmp"), emps.map(e => ({ value: e.id, label: empLabel(e) })), $("#earnEmp").value, "(select employee)");
+    ensureSelectOptions($("#earnType"), types.map(t => ({ value: t.id, label: t.name })), $("#earnType").value, "(select type)");
+
+    if (!$("#hoursDate").value) $("#hoursDate").value = isoToday();
+    if (!$("#earnDate").value) $("#earnDate").value = isoToday();
+
+    updateHoursPreview();
+    renderEntriesTable();
+  }
+
+  function updateHoursPreview() {
+    const empId = $("#hoursEmp").value;
+    const date = $("#hoursDate").value;
+    const hours = Number($("#hoursValue").value);
+    const el = $("#hoursPreview");
+    if (!empId || !isIsoDate(date) || !Number.isFinite(hours)) { el.textContent = ""; return; }
+    const wage = getWageAt(empId, date);
+    if (wage == null) { el.textContent = "No wage found for that date (add an initial wage)."; return; }
+    const amount = round2(wage * hours);
+    el.textContent = `Wage on ${date}: ${fmtMoney(wage)}/hr → Amount: ${fmtMoney(amount)}`;
+  }
+
+  function renderEntriesTable() {
+    const from = $("#entriesFrom").value || null;
+    const to = $("#entriesTo").value || null;
+    if (from && !isIsoDate(from)) { setMsg("Invalid 'From' date.", "err"); return; }
+    if (to && !isIsoDate(to)) { setMsg("Invalid 'To' date.", "err"); return; }
+
+    let rows = data.entries.slice();
+    if (from) rows = rows.filter(e => e.date >= from);
+    if (to) rows = rows.filter(e => e.date <= to);
+    rows.sort((a,b) => String(b.date).localeCompare(String(a.date)));
+
+    const container = $("#entriesTable");
+    if (!rows.length) { container.innerHTML = `<div class="muted">No entries in this range.</div>`; return; }
+
+    container.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th><th>Employee</th><th>Type</th><th>Hours</th><th>Amount</th><th>Note</th><th class="right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(en => {
+            const emp = findEmployee(en.employeeId);
+            return `
+              <tr>
+                <td class="mono">${escapeHtml(en.date)}</td>
+                <td>${emp ? escapeHtml(emp.firstName + " " + emp.lastName) : "(deleted employee)"}</td>
+                <td>${escapeHtml(typeName(en.typeId))}</td>
+                <td class="mono">${fmtNum(Number(en.hours))}</td>
+                <td class="mono">${fmtMoney(Number(en.amount))}</td>
+                <td>${en.note ? escapeHtml(en.note) : ""}</td>
+                <td class="right">
+                  <button class="danger small" data-action="delEntry" data-id="${en.id}">Delete</button>
+                </td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
+    `;
+
+    container.querySelectorAll("button[data-action='delEntry']").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-id");
+        data.entries = data.entries.filter(e => e.id !== id);
+        save();
+        renderEntriesTable();
+        setMsg("Deleted entry.");
+      });
+    });
+  }
+
+  function refreshReportsBasics() {
+    const stores = data.stores.slice().sort(sortByName);
+    ensureSelectOptions($("#rptStore"), stores.map(s => ({ value: s.id, label: s.name })), $("#rptStore").value);
+    $("#rptKpis").innerHTML = "";
+    $("#rptTable").innerHTML = `<div class="muted">Choose a store and run the report.</div>`;
+  }
+
+  function runReport() {
+    const storeId = $("#rptStore").value;
+    if (!storeId) { setMsg("Select a store for the report.", "err"); return; }
+
+    const from = $("#rptFrom").value || null;
+    const to = $("#rptTo").value || null;
+    if (from && !isIsoDate(from)) { setMsg("Invalid 'From' date.", "err"); return; }
+    if (to && !isIsoDate(to)) { setMsg("Invalid 'To' date.", "err"); return; }
+
+    const depts = data.departments.filter(d => d.storeId === storeId).slice().sort(sortByName);
+    const empsInStore = data.employees.filter(e => e.storeId === storeId);
+
+    const deptAgg = new Map();
+    for (const d of depts) deptAgg.set(d.id, { hours: 0, earnings: 0 });
+
+    const inRange = (date) => {
+      if (from && date < from) return false;
+      if (to && date > to) return false;
+      return true;
+    };
+
+    for (const en of data.entries) {
+      if (!inRange(en.date)) continue;
+      const emp = findEmployee(en.employeeId);
+      if (!emp) continue;
+      if (emp.storeId !== storeId) continue;
+
+      const agg = deptAgg.get(emp.deptId);
+      if (!agg) continue;
+
+      agg.hours += Number(en.hours) || 0;
+      agg.earnings += Number(en.amount) || 0;
+    }
+
+    const rows = depts.map(d => {
+      const agg = deptAgg.get(d.id) || { hours: 0, earnings: 0 };
+      const hours = round2(agg.hours);
+      const earnings = round2(agg.earnings);
+      const avg = hours > 0 ? round2(earnings / hours) : null;
+      return { department: d.name, totalHours: hours, totalEarnings: earnings, avgWage: avg };
+    });
+
+    const storeHours = round2(rows.reduce((s,r) => s + r.totalHours, 0));
+    const storeEarn = round2(rows.reduce((s,r) => s + r.totalEarnings, 0));
+    const storeAvg = storeHours > 0 ? round2(storeEarn / storeHours) : null;
+
+    $("#rptKpis").innerHTML = `
+      <div class="cardlike"><b>Employees in store</b><span>${empsInStore.length}</span></div>
+      <div class="cardlike"><b>Total hours</b><span>${fmtNum(storeHours)}</span></div>
+      <div class="cardlike"><b>Total earnings</b><span>${fmtMoney(storeEarn)}</span></div>
+      <div class="cardlike"><b>Average wage</b><span>${storeAvg == null ? "" : fmtMoney(storeAvg)}</span></div>
+    `;
+
+    $("#rptTable").innerHTML = `
+      <table>
+        <thead>
+          <tr><th>Department</th><th>Total hours</th><th>Total earnings</th><th>Average wage</th></tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td>${escapeHtml(r.department)}</td>
+              <td class="mono">${fmtNum(r.totalHours)}</td>
+              <td class="mono">${fmtMoney(r.totalEarnings)}</td>
+              <td class="mono">${r.avgWage == null ? "" : fmtMoney(r.avgWage)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+      <div class="footnote">
+        Note: Bonuses with 0 hours increase earnings without increasing hours.
+      </div>
+    `;
+  }
+
+  function addStore() {
+    const name = requireNonEmpty($("#storeName").value, "Store name");
+    const exists = data.stores.some(s => s.name.toLowerCase() === name.toLowerCase());
+    if (exists) throw new Error("That store name already exists.");
+    data.stores.push({ id: uid(), name });
+    $("#storeName").value = "";
+    save();
+    refreshAll();
+    setMsg("Store added.");
+  }
+
+  function addDepartment() {
+    const storeId = requireNonEmpty($("#deptStore").value, "Store");
+    const name = requireNonEmpty($("#deptName").value, "Department name");
+    const exists = data.departments.some(d => d.storeId === storeId && d.name.toLowerCase() === name.toLowerCase());
+    if (exists) throw new Error("That department already exists in this store.");
+    data.departments.push({ id: uid(), storeId, name });
+    $("#deptName").value = "";
+    save();
+    refreshAll();
+    setMsg("Department added.");
+  }
+
+  function addEmployee() {
+    const firstName = requireNonEmpty($("#empFirst").value, "First name");
+    const lastName = requireNonEmpty($("#empLast").value, "Last name");
+    const storeId = requireNonEmpty($("#empStore").value, "Store");
+    const deptId = requireNonEmpty($("#empDept").value, "Department");
+    const hireDate = ensureDateOrNull($("#empHireDate").value);
+
+    const wage = Number($("#empWage").value);
+    if (!Number.isFinite(wage) || wage < 0) throw new Error("Initial hourly wage must be a number >= 0.");
+
+    const wageDate = $("#empWageDate").value || isoToday();
+    if (!isIsoDate(wageDate)) throw new Error("Wage effective date is required.");
+
+    const dept = findDept(deptId);
+    if (!dept || dept.storeId !== storeId) throw new Error("Department does not belong to selected store.");
+
+    const empId = uid();
+    const shortId = (Math.random().toString(10).slice(2, 6));
+
+    data.employees.push({ id: empId, shortId, firstName, lastName, storeId, deptId, hireDate, active: true });
+    upsertWage(empId, wageDate, round2(wage));
+
+    $("#empFirst").value = "";
+    $("#empLast").value = "";
+    $("#empHireDate").value = "";
+    $("#empWage").value = "";
+    $("#empWageDate").value = "";
+
+    save();
+    refreshAll();
+    setMsg("Employee added (with initial wage).");
+  }
+
+  function applyWageChange() {
+    const empId = requireNonEmpty($("#wageEmp").value, "Employee");
+    const date = requireNonEmpty($("#wageDate").value, "Effective date");
+    if (!isIsoDate(date)) throw new Error("Effective date must be valid.");
+
+    const setExact = $("#wageSet").value.trim();
+    const inc = $("#wageIncrease").value.trim();
+    if (!setExact && !inc) throw new Error("Enter an increase amount or an exact wage.");
+
+    let newRate;
+    if (setExact) {
+      const r = Number(setExact);
+      if (!Number.isFinite(r) || r < 0) throw new Error("Exact wage must be a number >= 0.");
+      newRate = round2(r);
+    } else {
+      const add = Number(inc);
+      if (!Number.isFinite(add) || add < 0) throw new Error("Increase must be a number >= 0.");
+      const base = getWageAt(empId, date);
+      if (base == null) throw new Error("No wage found before this date. Add an initial wage first.");
+      newRate = round2(base + add);
+    }
+
+    upsertWage(empId, date, newRate);
+    $("#wageIncrease").value = "";
+    $("#wageSet").value = "";
+    save();
+    refreshEmployees();
+    refreshEntries();
+    setMsg("Wage change saved.");
+  }
+
+  function addRegularHours() {
+    const empId = requireNonEmpty($("#hoursEmp").value, "Employee");
+    const date = requireNonEmpty($("#hoursDate").value, "Date");
+    if (!isIsoDate(date)) throw new Error("Date must be valid.");
+
+    const hours = Number($("#hoursValue").value);
+    if (!Number.isFinite(hours) || hours < 0) throw new Error("Hours must be a number >= 0.");
+
+    const wage = getWageAt(empId, date);
+    if (wage == null) throw new Error("No wage found for that date. Add an initial wage first.");
+
+    const amount = round2(wage * hours);
+    const regularType = data.earningTypes.find(t => t.name === "Regular");
+    if (!regularType) throw new Error("Missing earning type: Regular.");
+
+    data.entries.push({
+      id: uid(),
+      employeeId: empId,
+      typeId: regularType.id,
+      date,
+      hours: round2(hours),
+      amount,
+      note: ($("#hoursNote").value || "").trim()
+    });
+
+    $("#hoursValue").value = "";
+    $("#hoursNote").value = "";
+    save();
+    refreshEntries();
+    setMsg("Regular hours added.");
+  }
+
+  function addEarningEntry() {
+    const empId = requireNonEmpty($("#earnEmp").value, "Employee");
+    const typeId = requireNonEmpty($("#earnType").value, "Earning type");
+    const date = requireNonEmpty($("#earnDate").value, "Date");
+    if (!isIsoDate(date)) throw new Error("Date must be valid.");
+
+    const hours = Number($("#earnHours").value || "0");
+    if (!Number.isFinite(hours) || hours < 0) throw new Error("Hours must be a number >= 0.");
+
+    const amount = Number($("#earnAmount").value);
+    if (!Number.isFinite(amount) || amount < 0) throw new Error("Amount must be a number >= 0.");
+
+    data.entries.push({
+      id: uid(),
+      employeeId: empId,
+      typeId,
+      date,
+      hours: round2(hours),
+      amount: round2(amount),
+      note: ($("#earnNote").value || "").trim()
+    });
+
+    $("#earnHours").value = "";
+    $("#earnAmount").value = "";
+    $("#earnNote").value = "";
+    save();
+    refreshEntries();
+    setMsg("Earning entry added.");
+  }
+
+  function addEarningType() {
+    const name = requireNonEmpty($("#newTypeName").value, "Earning type name");
+    const exists = data.earningTypes.some(t => t.name.toLowerCase() === name.toLowerCase());
+    if (exists) throw new Error("That earning type already exists.");
+    data.earningTypes.push({ id: uid(), name });
+    $("#newTypeName").value = "";
+    save();
+    refreshEntries();
+    setMsg("Earning type added.");
+  }
+
+  function deleteStore(storeId) {
+    const store = findStore(storeId);
+    if (!store) return;
+    if (!confirm(`Delete store "${store.name}" and everything inside it?`)) return;
+
+    const empIds = data.employees.filter(e => e.storeId === storeId).map(e => e.id);
+
+    data.stores = data.stores.filter(s => s.id !== storeId);
+    data.departments = data.departments.filter(d => d.storeId !== storeId);
+    data.employees = data.employees.filter(e => e.storeId !== storeId);
+    data.wages = data.wages.filter(w => !empIds.includes(w.employeeId));
+    data.entries = data.entries.filter(en => !empIds.includes(en.employeeId));
+
+    save();
+    refreshAll();
+    setMsg("Store deleted.");
+  }
+
+  function deleteDepartment(deptId) {
+    const dept = findDept(deptId);
+    if (!dept) return;
+
+    const count = data.employees.filter(e => e.deptId === deptId).length;
+    if (!confirm(`Delete department "${dept.name}"? This will also delete ${count} employee(s) in it, plus their wages and entries.`)) return;
+
+    const empIds = data.employees.filter(e => e.deptId === deptId).map(e => e.id);
+
+    data.departments = data.departments.filter(d => d.id !== deptId);
+    data.employees = data.employees.filter(e => e.deptId !== deptId);
+    data.wages = data.wages.filter(w => !empIds.includes(w.employeeId));
+    data.entries = data.entries.filter(en => !empIds.includes(en.employeeId));
+
+    save();
+    refreshAll();
+    setMsg("Department deleted.");
+  }
+
+  function deleteEmployee(empId) {
+    const emp = findEmployee(empId);
+    if (!emp) return;
+    if (!confirm(`Delete employee "${emp.firstName} ${emp.lastName}" and all their wage history + entries?`)) return;
+
+    data.employees = data.employees.filter(e => e.id !== empId);
+    data.wages = data.wages.filter(w => w.employeeId !== empId);
+    data.entries = data.entries.filter(en => en.employeeId !== empId);
+
+    save();
+    refreshAll();
+    setMsg("Employee deleted.");
+  }
+
+  function clearAll() {
+    if (!confirm("Clear ALL data? This cannot be undone.")) return;
+    localStorage.removeItem(STORAGE_KEY);
+    data = defaultData();
+    save();
+    refreshAll();
+    setMsg("All data cleared.");
+  }
+
+  function exportJson() {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `wage_program_backup_${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setMsg("Backup downloaded.");
+  }
+
+  async function importJson() {
+    const file = $("#importFile").files && $("#importFile").files[0];
+    if (!file) { setMsg("Choose a JSON file to import.", "err"); return; }
+    if (!confirm("Import will replace your current data. Continue?")) return;
+
+    const text = await file.text();
+    const obj = JSON.parse(text);
+
+    if (!obj || typeof obj !== "object") throw new Error("Invalid JSON.");
+    if (!Array.isArray(obj.stores) || !Array.isArray(obj.departments) || !Array.isArray(obj.employees) ||
+        !Array.isArray(obj.wages) || !Array.isArray(obj.earningTypes) || !Array.isArray(obj.entries)) {
+      throw new Error("Backup file is missing required fields.");
+    }
+
+    data = obj;
+    save();
+    refreshAll();
+    setMsg("Backup imported.");
+  }
+
+  function setTab(name) {
+    $$(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name ? "true" : "false"));
+    $$(".panel").forEach(p => p.classList.toggle("hidden", p.id !== "tab-" + name));
+  }
+
+  function safe(fn) {
+    try { fn(); }
+    catch (e) { console.error(e); setMsg(e && e.message ? e.message : "Something went wrong.", "err"); }
+  }
+
+  let data = load();
+
+  function initUi() {
+    $("#storageKey").textContent = STORAGE_KEY;
+
+    $$(".tab").forEach(btn => btn.addEventListener("click", () => setTab(btn.dataset.tab)));
+
+    $("#addStoreBtn").addEventListener("click", () => safe(addStore));
+    $("#addDeptBtn").addEventListener("click", () => safe(addDepartment));
+    $("#clearAllBtn").addEventListener("click", () => safe(clearAll));
+
+    $("#empStore").addEventListener("change", () => { refreshEmpDeptDropdown(); });
+    $("#addEmpBtn").addEventListener("click", () => safe(addEmployee));
+    $("#wageEmp").addEventListener("change", () => renderWageHistory());
+    $("#applyWageBtn").addEventListener("click", () => safe(applyWageChange));
+
+    $("#empFilterStore").addEventListener("change", () => { refreshEmpFilterDept(); renderEmployeesTable(); });
+    $("#empFilterDept").addEventListener("change", () => renderEmployeesTable());
+
+    $("#hoursEmp").addEventListener("change", updateHoursPreview);
+    $("#hoursDate").addEventListener("change", updateHoursPreview);
+    $("#hoursValue").addEventListener("input", updateHoursPreview);
+    $("#addHoursBtn").addEventListener("click", () => safe(addRegularHours));
+
+    $("#addEarnBtn").addEventListener("click", () => safe(addEarningEntry));
+    $("#addTypeBtn").addEventListener("click", () => safe(addEarningType));
+    $("#refreshEntriesBtn").addEventListener("click", () => safe(renderEntriesTable));
+    $("#entriesFrom").addEventListener("change", () => safe(renderEntriesTable));
+    $("#entriesTo").addEventListener("change", () => safe(renderEntriesTable));
+
+    $("#runReportBtn").addEventListener("click", () => safe(runReport));
+
+    $("#exportBtn").addEventListener("click", () => safe(exportJson));
+    $("#importBtn").addEventListener("click", () => safe(importJson));
+
+    $("#empWageDate").value = isoToday();
+    $("#wageDate").value = isoToday();
+    $("#hoursDate").value = isoToday();
+    $("#earnDate").value = isoToday();
+
+    refreshAll();
+  }
+
+  initUi();
+})();
+</script>
+</body>
+</html>
